@@ -1,0 +1,245 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+ <style>
+ .row { margin-left:0px; }
+ .s {padding-right:20px}
+ </style>
+<title> Business Unit</title>
+<script src="js/d3.v3.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+
+</head>
+
+<body>
+<div class="container" style="width:1160px">
+<div class="row" style=" padding-top:30px">
+<h2>创业板上半年全球最牛 “妖股”减持盘点</h2>
+</div>
+<div class="row" style=" padding-top:50px">
+	<div class="span2 s" id="legend" style="height:500px"></div>
+    <div class="span9 s" ></div>
+    <div class="span3 s" style="width:200px">
+        <p id="pid"><span>公司编号：</span></p>
+        <p id="pname"><span>公司名称：</span></p>
+        <p id="pgrow"><span>涨幅：</span></p>
+        <p id="phold"><span>增减持：</span></p>
+        <p id="pidu"><span>所属行业：</span></p>
+        <p id="pdate"><span>注册日期：</span></p>
+        <p id="pcap"><span>注册资本：</span></p>
+        <p id="pcir"><span>流通资本：</span></p>
+        <p id="psite" class=""><span>公司网站：</span><br /></p>
+    </div>
+</div>
+<div class="row" style="margin-top:-80px">
+<div class="pull-left" style="padding-left:20px; padding-top:50px">
+<p><span>Code & Data :<a href="http://weibo.com/fengmengxia">@小和子</a></span><span style="padding-left:50px">Concept&Design :<a href="http://weibo.com/ayay"> @小雍子</a></span><p>
+<p>Canvas Edition : <a href="http://xiaoyongzi.github.io/Dataviz_Tutorials/demo/bubble.html">http://xiaoyongzi.github.io/Dataviz_Tutorials/demo/bubble.html </a> </p></div>
+</div>
+</div>
+
+
+<script type="application/javascript">
+
+var width = 700,
+	height = 500;
+
+var color = d3.scale.category20();
+	
+var indata = ["制造业","信息技术","科研服务","运输仓储","卫生","批发零售","文化传播","建筑业","商务服务","公共环保","采矿业","农林牧渔","水电煤气"];
+	
+legend = d3.select("#legend").append("svg").selectAll(".legend")
+			.data(indata)
+			.enter()
+			.append("g")
+			.attr("class","legend")
+			
+	legend.append("circle")
+	    .attr("class","index")
+		.attr("cx",10)
+		.attr("cy",function(d,i){return i*35+10})
+		.attr("r",10)
+		.style("fill",function(d){return color(d);})
+		.on("mouseover",function(d){
+			d3.select(this).style("cursor","pointer")
+		})
+		.on("click",function(d){
+			var name = d;
+			d3.selectAll(".index").transition().attr("r",function(d){if(d==name){return 10;}else{return 5;}})
+			d3.selectAll(".nodes")
+			    .transition()
+			    .attr("r",function(d){if(d.industry==name){ return rscale(d.grow);}else{return 0;} })
+			})
+
+		
+	legend.append("text")
+		.attr("x",25)
+		.attr("y",function(d,i){return i*35+15})
+		.text(function(d){return d;})
+			
+	
+
+	
+
+svg = d3.select(".span9").append("svg")
+	.attr("width",width)
+	.attr("height",height);
+	
+var drag_vertical = d3.behavior.drag()
+    .origin(Object)
+    .on("drag", move_vertical);
+	
+function move_vertical() {
+			d3.select("#horizontal_line")
+			.attr("y1", d3.mouse(this)[1])
+			.attr("y2", d3.mouse(this)[1]);
+			d3.selectAll(".horizontal_ball")
+			.attr("cy",d3.mouse(this)[1]);
+			d3.select("#horizontal_text")
+			.text(d3.round(vyscale(d3.mouse(this)[1]),1)+"%")
+			.attr("y",d3.mouse(this)[1]-8);
+			d3.select("#remind")
+			.attr("y",d3.mouse(this)[1]-4);
+			d3.selectAll(".nodes")
+				.style("fill-opacity",function(d){if(yscale(d.grow)>d3.mouse(this)[1]){return 0.2;}else{return 0.5;}})
+			
+
+}
+
+	
+d3.json("data.json",function(error,root){
+	
+	var hold_max = 0,
+		hold_min = 0,
+		grow_max = 0,
+		grow_min = 0;
+		
+	for(i=0;i<root.length;i++){
+
+		if(root[i].hold>hold_max){
+			hold_max = root[i].hold;
+			}
+		if(root[i].hold<hold_min){
+			hold_min = root[i].hold;
+			}
+		if(root[i].grow>grow_max){
+			grow_max = root[i].grow;
+			}
+		if(root[i].grow<grow_min){
+			grow_min = root[i].grow;
+			}
+
+	}
+	
+	xscale = d3.scale.linear()
+		.domain([hold_min,hold_max])
+		.range([20,width-20]);
+	yscale = d3.scale.linear()
+		.domain([grow_min,grow_max])
+		.range([height-20,20]);
+	rscale = d3.scale.linear()
+		.domain([grow_min,grow_max])
+		.range([1,20]);
+	color = d3.scale.category20();
+	
+	vyscale = d3.scale.linear()
+		.domain([height-20,20])
+		.range([grow_min,grow_max]);
+	
+	g = svg.selectAll(".g")
+		.data(root)
+		.enter()
+		.append("g")
+		.attr("class","circle")
+		//.attr("transform",function(d){return "translate("+xscale(d.hold)+","+yscale(d.grow)+")";});
+		
+	g.append("circle")
+		.attr("class","nodes")
+		.attr("cx",function(d){return xscale(d.hold);})
+		.attr("cy",function(d){return yscale(d.grow);})
+		.attr("r",function(d){return rscale(d.grow);})
+		.style("fill",function(d){ return color(d.industry);})
+		.style("fill-opacity",0.5)
+		.on("mouseover",function(){d3.select(this).style("fill-opacity",0.7).style("cursor","pointer");})
+		.on("mouseout",function(){d3.select(this).style("fill-opacity",0.5);})
+		.on("click",function(d){ 
+			d3.select("#name").remove();
+			d3.select("#ID").remove();
+			d3.select("#grow").remove();
+			d3.select("#hold").remove();
+			d3.select("#industry").remove();
+			d3.select("#date").remove();
+			d3.select("#cap").remove();
+			d3.select("#cir").remove();
+			d3.select("#site").remove();
+			d3.select("#pname").append("span").text(d.name).attr("id","name");
+			d3.select("#pid").append("span").text(d.ID).attr("id","ID");
+			d3.select("#pgrow").append("span").text(d.grow+" %").attr("id","grow");
+			d3.select("#phold").append("span").text(d.hold+" 万元").attr("id","hold");
+			d3.select("#pidu").append("span").text(d.industry).attr("id","industry");
+			d3.select("#pdate").append("span").text(d.date).attr("id","date");
+			d3.select("#pcap").append("span").text(d.capital).attr("id","cap");
+			d3.select("#pcir").append("span").text(d.circulate).attr("id","cir");
+			d3.select("#psite").append("a").text(d.site).attr("id","site");
+		})	
+
+	
+	horizontal = svg.append("g")
+		.call(drag_vertical);
+	
+	horizontal.append("circle")
+		.attr("class","horizontal_ball")
+		.attr("cx",width)
+		.attr("cy",yscale(0))
+		.attr("r",5)
+		.style("fill","gray")
+		
+	horizontal.append("circle")
+		.attr("class","horizontal_ball")
+		.attr("cx",0)
+		.attr("cy",yscale(0))
+		.attr("r",5)
+		.style("fill","gray")
+
+		
+	horizontal.append("line")
+		.attr("id","horizontal_line")
+		.attr("x1",0)
+		.attr("y1",yscale(0))
+		.attr("x2",width)
+		.attr("y2",yscale(0))
+		.style("stroke","gray")
+		.style("stroke-weight",2)
+		
+	horizontal.append("text")
+		.attr("id","horizontal_text")
+		.attr("x",width-50)
+		.attr("y",yscale(0))
+		
+	horizontal.append("text")
+		.attr("id","remind")
+		.attr("x",0)
+		.attr("y",yscale(0))
+		.text("上下拖动")
+		.style("font-size",8)
+		
+	
+	svg.append("line")
+		.attr("x1",xscale(0))
+		.attr("y1",0)
+		.attr("x2",xscale(0))
+		.attr("y2",height)
+		.style("stroke","gray")
+		.style("stroke-weight",2)
+		
+
+		
+})
+
+
+
+</script>
+</body>
+</html>
